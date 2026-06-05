@@ -124,8 +124,8 @@ const isSelected = computed(() => {
  */
 async function loadFullImage(img: ImageFile) {
   try {
-    // 使用 Tauri 读取文件并转换为 base64
-    const { readBinaryFile } = await import('@tauri-apps/api/fs');
+    // 使用 Tauri plugin-fs 读取文件并转换为 base64
+    const { readBinaryFile } = await import('@tauri-apps/plugin-fs');
     const binary = await readBinaryFile(img.path);
     const base64 = arrayBufferToBase64(binary);
     

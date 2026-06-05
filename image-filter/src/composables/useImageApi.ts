@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type { ImageFile, DriveInfo } from '../types';
 
 /**
- * 选择文件夹并获取图片列表
+ * 选择源文件夹
  */
 export async function selectFolder(): Promise<string | null> {
   try {
@@ -10,45 +10,6 @@ export async function selectFolder(): Promise<string | null> {
     return folder;
   } catch (error) {
     console.error('Failed to select folder:', error);
-    throw error;
-  }
-}
-
-/**
- * 加载指定文件夹的图片
- */
-export async function loadImages(folderPath: string): Promise<ImageFile[]> {
-  try {
-    const images = await invoke<ImageFile[]>('load_images', { path: folderPath });
-    return images;
-  } catch (error) {
-    console.error('Failed to load images:', error);
-    throw error;
-  }
-}
-
-/**
- * 生成图片缩略图
- */
-export async function generateThumbnail(imagePath: string, width: number = 200): Promise<string> {
-  try {
-    const thumbnail = await invoke<string>('generate_thumbnail', { path: imagePath, width });
-    return thumbnail;
-  } catch (error) {
-    console.error('Failed to generate thumbnail:', error);
-    throw error;
-  }
-}
-
-/**
- * 获取外接驱动器列表
- */
-export async function getDrives(): Promise<DriveInfo[]> {
-  try {
-    const drives = await invoke<DriveInfo[]>('get_drives');
-    return drives;
-  } catch (error) {
-    console.error('Failed to get drives:', error);
     throw error;
   }
 }
@@ -67,16 +28,55 @@ export async function selectTargetFolder(): Promise<string | null> {
 }
 
 /**
+ * 加载指定文件夹的图片
+ */
+export async function loadImages(folderPath: string): Promise<ImageFile[]> {
+  try {
+    const images = await invoke<ImageFile[]>('list_images_in_folder', { folderPath });
+    return images;
+  } catch (error) {
+    console.error('Failed to load images:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取图片预览（base64）
+ */
+export async function getImagePreview(imagePath: string): Promise<string> {
+  try {
+    const preview = await invoke<string>('get_image_preview', { path: imagePath });
+    return preview;
+  } catch (error) {
+    console.error('Failed to get image preview:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取外接驱动器列表
+ */
+export async function getDrives(): Promise<string[]> {
+  try {
+    const drives = await invoke<string[]>('detect_external_drives');
+    return drives;
+  } catch (error) {
+    console.error('Failed to get drives:', error);
+    throw error;
+  }
+}
+
+/**
  * 复制选中的图片到目标文件夹
  */
 export async function copySelectedImages(
   sourcePaths: string[],
   targetFolder: string
-): Promise<{ success: boolean; copied: number; failed: number; errors: string[] }> {
+): Promise<{ success: number; failed: number; errors: string[] }> {
   try {
-    const result = await invoke<{ success: boolean; copied: number; failed: number; errors: string[] }>(
-      'copy_images',
-      { sourcePaths, targetFolder }
+    const result = await invoke<{ success: number; failed: number; errors: string[] }>(
+      'copy_selected_images',
+      { sourcePaths, destFolder: targetFolder }
     );
     return result;
   } catch (error) {
@@ -90,7 +90,7 @@ export async function copySelectedImages(
  */
 export async function startWatching(folderPath: string): Promise<void> {
   try {
-    await invoke('start_watching', { path: folderPath });
+    await invoke('start_watching_folder', { folderPath });
   } catch (error) {
     console.error('Failed to start watching:', error);
     throw error;
@@ -98,26 +98,10 @@ export async function startWatching(folderPath: string): Promise<void> {
 }
 
 /**
- * 停止监听文件夹变化
+ * 停止监听文件夹变化 - 目前通过重新选择文件夹来切换
  */
 export async function stopWatching(): Promise<void> {
-  try {
-    await invoke('stop_watching');
-  } catch (error) {
-    console.error('Failed to stop watching:', error);
-    throw error;
-  }
-}
-
-/**
- * 读取图片的元数据（EXIF 等）
- */
-export async function getImageMetadata(imagePath: string): Promise<Record<string, any>> {
-  try {
-    const metadata = await invoke<Record<string, any>>('get_image_metadata', { path: imagePath });
-    return metadata;
-  } catch (error) {
-    console.error('Failed to get image metadata:', error);
-    return {};
-  }
+  // 当前实现中，watcher 会在选择新文件夹时自动替换
+  // 如需显式停止，可以在 Rust 端添加 stop_watching 命令
+  console.log('Watching will stop when selecting a new folder');
 }
