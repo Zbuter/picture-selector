@@ -49,6 +49,7 @@
           <span class="divider">|</span>
           <span>{{ formatSize(image.size) }}</span>
           <span v-if="image.isRaw" class="raw-tag">RAW</span>
+          <span class="shortcut-hint">空格：选择并下一张 | ← →：切换图片 | Esc：关闭</span>
         </div>
         
         <div class="action-buttons">
@@ -220,12 +221,26 @@ function handleClose() {
 function handleKeydown(event: KeyboardEvent) {
   if (!visible.value) return;
   
+  // 防止在输入框中触发
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    return;
+  }
+  
   if (event.key === 'ArrowLeft') {
+    event.preventDefault();
     navigate(-1);
   } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
     navigate(1);
   } else if (event.key === 'Escape') {
     store.closePreview();
+  } else if (event.key === ' ' || event.code === 'Space') {
+    // Space 键：选择当前图片并跳到下一张
+    event.preventDefault();
+    toggleSelect();
+    if (hasNext.value) {
+      navigate(1);
+    }
   }
 }
 
@@ -312,6 +327,15 @@ watch(visible, (newVal) => {
   gap: 12px;
   color: #606266;
   font-size: 14px;
+}
+
+.shortcut-hint {
+  color: #909399;
+  font-size: 12px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #f4f4f5;
+  border-radius: 4px;
 }
 
 .divider {
