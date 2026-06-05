@@ -2,9 +2,7 @@ use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use std::sync::mpsc::channel;
-use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageFile {
@@ -194,8 +192,6 @@ fn start_watching_folder(
     // Store the watched path
     *state.watched_path.lock().unwrap() = Some(path.clone());
     
-    let (tx, rx) = channel();
-    
     let mut watcher = RecommendedWatcher::new(
         move |res: Result<notify::Event, notify::Error>| {
             if let Ok(event) = res {
@@ -228,16 +224,6 @@ fn start_watching_folder(
     watcher
         .watch(&path, RecursiveMode::Recursive)
         .map_err(|e| e.to_string())?;
-    
-    // Store watcher in app state (simplified - in production you'd want proper lifetime management)
-    std::thread::spawn(move || {
-        loop {
-            std::thread::sleep(Duration::from_millis(100));
-            if let Ok(_) = rx.try_recv() {
-                // Events are handled in the callback
-            }
-        }
-    });
     
     Ok(())
 }
